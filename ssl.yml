@@ -1,0 +1,31 @@
+--- 
+- hosts: localhost
+  vars:
+    ssl_dir: myssl
+    server_ip: 192.168.56.101
+    csr: mycsr
+  tasks:
+  - name: install EPEL repository
+    package: name=epel-release state=latest
+  - name: install python-pip
+    package: name=python-pip state=present
+  - name: install pyopenssl
+    command: pip install pyopenssl
+  - name: Ensure directory exists for local self-signed TLS certs.
+    file:
+      path: /{{ ssl_dir }}
+      state: directory
+  - name: Generate an OpenSSL private key.
+    openssl_privatekey:
+      path: /{{ ssl_dir }}/privatekey.key
+  - name: Generate an OpenSSL CSR.
+    openssl_csr:
+      path: /{{ ssl_dir }}/{{ csr }}.csr
+      privatekey_path: /{{ ssl_dir }}/privatekey.key
+      common_name: "{{ server_ip }}"
+  - name: Generate a Self Signed OpenSSL certificate.
+    openssl_certificate:
+      path: /{{ ssl_dir }}/fullchain.crt
+      privatekey_path: /{{ ssl_dir }}/privatekey.key
+      csr_path: /{{ ssl_dir }}/{{ csr }}.csr
+      provider: selfsigned
